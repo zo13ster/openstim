@@ -1,4 +1,3 @@
-
 package openstim.model;
 
 import java.awt.*;
@@ -55,12 +54,14 @@ public class WaveformEditor extends DefaultCellEditor {
 		}
 	}
 
+	// ----------------------------------------------------------------------
+
 	private class PopupDialog extends JDialog {
 		final JComboBox[] shapeCombobox = new JComboBox[Waveform.NUM_SHAPES];
 		final JSlider[] weightSlider = new JSlider[Waveform.NUM_SHAPES];
 		final JSlider[] speedSlider = new JSlider[Waveform.NUM_SHAPES];
 		final JSlider[] phaseSlider = new JSlider[Waveform.NUM_SHAPES];
-		final JTextField spec = new JTextField();
+		final JTextField specField = new JTextField();
 		final WaveformRenderer preview = new WaveformRenderer(true);
 
 		public Waveform value;
@@ -70,7 +71,7 @@ public class WaveformEditor extends DefaultCellEditor {
 			super((Frame)null, "Modify waveform", true);
 			setIconImage(GUI.APP_ICON);
 			value = (wf != null ? new Waveform(wf) : new Waveform());
-			spec.setText(value.toString());
+			specField.setText(value.toString());
 			canceled = true;
 
 			GridBagLayout layout = new GridBagLayout();
@@ -83,7 +84,6 @@ public class WaveformEditor extends DefaultCellEditor {
 				speedSlider[i] = createSpeedSlider(layout, i);
 				phaseSlider[i] = createPhaseSlider(layout, i);
 				if (i < Waveform.NUM_SHAPES - 1) createVerticalSeparator(layout, i);
-
 			}
 
 			JSeparator separator = new JSeparator();
@@ -98,23 +98,17 @@ public class WaveformEditor extends DefaultCellEditor {
 			layout.setConstraints(separator, new GridBagConstraints(0, 6, GridBagConstraints.REMAINDER, 1, 1, 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, insets, 0, 0));
 			getContentPane().add(separator);
 
-			spec.addActionListener(new ActionListener() {
-				public void actionPerformed(ActionEvent e) {
-					parseSpec();
-				}
+			specField.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent e) { parseSpec(); }
 			});
-			spec.addFocusListener(new FocusAdapter() {
-				public void focusLost(FocusEvent e) {
-					if (!e.isTemporary()) {
-						parseSpec();
-					}
-				}
+			specField.addFocusListener(new FocusAdapter() {
+				public void focusLost(FocusEvent e) { if (!e.isTemporary()) parseSpec(); }
 			});
-			layout.setConstraints(spec, new GridBagConstraints(0, 7, GridBagConstraints.REMAINDER, 1, 1, 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, insets, 0, 0));
-			getContentPane().add(spec);
+			layout.setConstraints(specField, new GridBagConstraints(0, 7, GridBagConstraints.REMAINDER, 1, 1, 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, insets, 0, 0));
+			getContentPane().add(specField);
 
 			JPanel panel = new JPanel();
-			for (final Waveform.Shape shape : Waveform.Shape.values()) {
+			/*for (final Waveform.Shape shape : Waveform.Shape.values()) {
 				if (shape.equals(Waveform.Shape.NONE)) continue;
 				JButton pure = new JButton("Pure");
 				pure.addActionListener(new ActionListener() {
@@ -128,7 +122,7 @@ public class WaveformEditor extends DefaultCellEditor {
 					}
 				});
 				panel.add(pure);
-			}
+			}*/
 
 			if (canClear) {
 				JButton clear = new JButton("Clear");
@@ -176,7 +170,7 @@ public class WaveformEditor extends DefaultCellEditor {
 			combo.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent e) {
 					value.setShape(index, (Waveform.Shape)combo.getSelectedItem());
-					spec.setText(value.toString());
+					specField.setText(value.toString());
 					preview.setValue(value);
 				}
 			});
@@ -202,9 +196,11 @@ public class WaveformEditor extends DefaultCellEditor {
 			slider.addChangeListener(new ChangeListener() {
 				public void stateChanged(ChangeEvent e) {
 					vlabel.setText(String.format("%d", slider.getValue()));
-					value.setWeight(index, (float)slider.getValue() / 100.0f);
-					spec.setText(value.toString());
-					preview.setValue(value);
+					if (!slider.getValueIsAdjusting()) {
+						value.setWeight(index, (float)slider.getValue() / 100.0f);
+						specField.setText(value.toString());
+						preview.setValue(value);
+					}
 				}
 			});
 			layout.setConstraints(label,  new GridBagConstraints(index*4+0, 1, 1, 1, 0, 0, GridBagConstraints.CENTER, GridBagConstraints.NONE, insets0, 0, 0));
@@ -233,9 +229,11 @@ public class WaveformEditor extends DefaultCellEditor {
 			slider.addChangeListener(new ChangeListener() {
 				public void stateChanged(ChangeEvent e) {
 					vlabel.setText(String.format("%+d%%", slider.getValue()));
-					value.setSpeed(index, (float)slider.getValue() / 100.0f);
-					spec.setText(value.toString());
-					preview.setValue(value);
+					if (!slider.getValueIsAdjusting()) {
+						value.setSpeed(index, (float)slider.getValue() / 100.0f);
+						specField.setText(value.toString());
+						preview.setValue(value);
+					}
 				}
 			});
 			layout.setConstraints(label,  new GridBagConstraints(index*4+1, 1, 1, 1, 0, 0, GridBagConstraints.CENTER, GridBagConstraints.NONE, insets0, 0, 0));
@@ -264,9 +262,11 @@ public class WaveformEditor extends DefaultCellEditor {
 			slider.addChangeListener(new ChangeListener() {
 				public void stateChanged(ChangeEvent e) {
 					vlabel.setText(String.format("%+d%%", slider.getValue()));
-					value.setPhase(index, (float)slider.getValue() / 100.0f);
-					spec.setText(value.toString());
-					preview.setValue(value);
+					if (!slider.getValueIsAdjusting()) {
+						value.setPhase(index, (float)slider.getValue() / 100.0f);
+						specField.setText(value.toString());
+						preview.setValue(value);
+					}
 				}
 			});
 			layout.setConstraints(label,  new GridBagConstraints(index*4+2, 1, 1, 1, 0, 0, GridBagConstraints.CENTER, GridBagConstraints.NONE, insets0, 0, 0));
@@ -292,7 +292,7 @@ public class WaveformEditor extends DefaultCellEditor {
 		private void parseSpec() {
 			try {
 				Waveform new_value = new Waveform();
-				new_value.assign(spec.getText());
+				new_value.assign(specField.getText());
 				value = new_value;
 				for (int i = 0; i < Waveform.NUM_SHAPES; i++) {
 					shapeCombobox[i].setSelectedItem(value.getShape(i));
