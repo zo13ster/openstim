@@ -57,7 +57,7 @@
 			<!--<pathelement location="_build/rmi/bin"/>-->
 		</path>
 		<copy todir="_build/classes">
-			<fileset dir=".">
+			<fileset dir="src">
 				<include name="**/*.gif"/>
 				<include name="**/*.png"/>
 				<include name="**/*.jpg"/>
