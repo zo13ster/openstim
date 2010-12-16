@@ -1,0 +1,242 @@
+
+package openstim.model;
+
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.Frame;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.AdjustmentEvent;
+import java.awt.event.AdjustmentListener;
+import javax.swing.DefaultCellEditor;
+import javax.swing.JButton;
+import javax.swing.JDialog;
+import javax.swing.JScrollBar;
+import javax.swing.JSeparator;
+import javax.swing.JSpinner;
+import javax.swing.JTable;
+import javax.swing.JTextField;
+import javax.swing.SpinnerNumberModel;
+import javax.swing.SwingUtilities;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+
+public class WaveformEditor extends DefaultCellEditor {
+	public WaveformEditor() {
+		super(new JTextField());
+		clickCountToStart = 2;
+	}
+
+	public Component getTableCellEditorComponent(JTable table, final Object value, boolean isSelected, int row, int column) {
+		final JButton editorComponent = new JButton();
+		editorComponent.setBackground(Color.WHITE);
+		editorComponent.setBorderPainted(false);
+		editorComponent.setContentAreaFilled(false);
+
+		final PopupDialog dialog = new PopupDialog((Waveform)value, column > 0);
+		delegate = new Delegate(dialog);
+
+		SwingUtilities.invokeLater(new Runnable() {
+			public void run() {
+				dialog.setLocationRelativeTo(editorComponent);
+				dialog.setVisible(true);
+
+				if (dialog.canceled) {
+					fireEditingCanceled();
+				} else {
+					fireEditingStopped();
+				}
+			}
+		});
+
+		return editorComponent;
+	}
+
+	private class Delegate extends EditorDelegate {
+		private PopupDialog dialog;
+
+		public Delegate(PopupDialog dlg) {
+			super();
+			dialog = dlg;
+		}
+
+		public Object getCellEditorValue() {
+			return dialog.value;
+		}
+
+		public void setValue(Object value) {
+			dialog.value = (Waveform)value;
+		}
+	}
+
+	private class PopupDialog extends JDialog {
+		final JScrollBar[] sliders = new JScrollBar[Waveform.params.length];
+		final JSpinner[] spinners = new JSpinner[Waveform.params.length];
+		final WaveformRenderer preview = new WaveformRenderer(true);
+
+		public Waveform value;
+		public boolean canceled;
+
+		public PopupDialog(Waveform wf, boolean canClear) {
+			super((Frame)null, "Modify waveform", true);
+			value = (wf != null ? new Waveform(wf) : new Waveform());
+			canceled = true;
+
+			GridBagLayout layout = new GridBagLayout();
+			getContentPane().setLayout(layout);
+			Insets insets = new Insets(2, 4, 2, 4);
+
+			for (int i = 0; i < Waveform.params.length; i++) {
+				JButton button = createButton(i, Waveform.params[i]);
+				layout.setConstraints(button, new GridBagConstraints(
+					0, i, 1, 1, 0, 0,
+					GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL,
+					insets, 0, 0
+				));
+				getContentPane().add(button);
+			}
+
+			for (int i = 0; i < Waveform.params.length; i++) {
+				sliders[i] = createSlider(i);
+				layout.setConstraints(sliders[i], new GridBagConstraints(
+					1, i, 2, 1, 1, 0,
+					GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL,
+					insets, 0, 0
+				));
+				getContentPane().add(sliders[i]);
+			}
+
+			for (int i = 0; i < Waveform.params.length; i++) {
+				spinners[i] = createSpinner(i);
+				layout.setConstraints(spinners[i], new GridBagConstraints(
+					3, i, 1, 1, 0, 0,
+					GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL,
+					insets, 0, 0
+				));
+				getContentPane().add(spinners[i]);
+			}
+
+			preview.setValue(value);
+			layout.setConstraints(preview, new GridBagConstraints(
+				0, Waveform.params.length, GridBagConstraints.REMAINDER, 1, 1, 1,
+				GridBagConstraints.WEST, GridBagConstraints.BOTH,
+				insets, 0, 0
+			));
+			getContentPane().add(preview);
+
+			JSeparator separator = new JSeparator();
+			layout.setConstraints(separator, new GridBagConstraints(
+				0, Waveform.params.length+1, GridBagConstraints.REMAINDER, 1, 1, 0,
+				GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL,
+				insets, 0, 0
+			));
+			getContentPane().add(separator);
+
+			if (canClear) {
+				JButton clear = new JButton("Clear");
+				clear.addActionListener(new ActionListener() {
+					public void actionPerformed(ActionEvent e) {
+						value = null;
+						canceled = false;
+						setVisible(false);
+					}
+				});
+				layout.setConstraints(clear, new GridBagConstraints(
+					0, Waveform.params.length+2, 1, 1, 0, 0,
+					GridBagConstraints.WEST, GridBagConstraints.NONE,
+					insets, 0, 0
+				));
+				getContentPane().add(clear);
+			}
+
+			JButton okay = new JButton("Okay");
+			okay.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent e) {
+					canceled = false;
+					setVisible(false);
+				}
+			});
+			layout.setConstraints(okay, new GridBagConstraints(
+				2, Waveform.params.length+2, 1, 1, 0, 0,
+				GridBagConstraints.EAST, GridBagConstraints.NONE,
+				insets, 0, 0
+			));
+			getContentPane().add(okay);
+
+			JButton cancel = new JButton("Cancel");
+			cancel.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent e) {
+					canceled = true;
+					setVisible(false);
+				}
+			});
+			layout.setConstraints(cancel, new GridBagConstraints(
+				3, Waveform.params.length+2, 1, 1, 0, 0,
+				GridBagConstraints.EAST, GridBagConstraints.NONE,
+				insets, 0, 0
+			));
+			getContentPane().add(cancel);
+
+			pack();
+			setMinimumSize(new Dimension(400, 350));
+			setResizable(false);
+		}
+
+		private JButton createButton(final int index, String label) {
+			final JButton button = new JButton(label);
+			Dimension dim = button.getPreferredSize();
+			dim.height = 16;
+			button.setPreferredSize(dim);
+			button.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent e) {
+					for (int i = 0; i < Waveform.params.length; i++) {
+						sliders[i].setValue(i == index ? 100 : 0);
+						spinners[i].setValue(i == index ? 100 : 0);
+					}
+					updatePreview();
+				}
+			});
+			return button;
+		}
+
+		private JScrollBar createSlider(final int index) {
+			final int v = (int)(100.0f * value.getParam(index));
+			final JScrollBar slider = new JScrollBar(JScrollBar.HORIZONTAL, v, 10, 0, 110);
+			slider.addAdjustmentListener(new AdjustmentListener() {
+				public void adjustmentValueChanged(AdjustmentEvent e) {
+					spinners[index].setValue(slider.getValue());
+					updatePreview();
+				}
+			});
+			return slider;
+		}
+
+		private JSpinner createSpinner(final int index) {
+			final int v = (int)(100.0f * value.getParam(index));
+			final JSpinner spinner = new JSpinner(new SpinnerNumberModel(v, 0, 100, 1));
+			spinner.setEditor(new JSpinner.NumberEditor(spinner, "0"));
+			spinner.addChangeListener(new ChangeListener() {
+				public void stateChanged(ChangeEvent e) {
+					Number val = (Number)spinner.getValue();
+					sliders[index].setValue(val.intValue());
+					updatePreview();
+				}
+			});
+			return spinner;
+		}
+
+		private void updatePreview() {
+			for (int i = 0; i < Waveform.params.length; i++) {
+				value.setParam(i, 0.01f * sliders[i].getValue());
+			}
+			value.normalize();
+			preview.setValue(value);
+		}
+	}
+}
+
+

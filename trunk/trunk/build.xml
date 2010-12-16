@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="OpenStim" default="debug">
+	<property name="version" value="0.0"/>
+	<property name="suffix" value=" alpha"/>
+
+	<taskdef resource="net/sf/antcontrib/antcontrib.properties">
+		<classpath>
+			<pathelement location="lib/ant-contrib-1.0b2.jar"/>
+		</classpath>
+	</taskdef>
+
+	<target name="clean" description="clean temporary directory">
+		<delete dir="_build"/>
+	</target>
+
+	<target name="debug" depends="svnrev" description="build developer version">
+		<property name="debug" value="true"/>
+		<property name="destination" value="${ant.project.name}-debug.jar"/>
+		<antcall target="compile"/>
+	</target>
+
+	<target name="final" depends="svnrev,svncheck" description="build end-user version">
+		<property name="debug" value="false"/>
+		<property name="destination" value="${ant.project.name}-${version.file}.jar"/>
+		<antcall target="compile"/>
+	</target>
+
+	<target name="svnrev">
+		<exec executable="svnversion" spawn="false" dir="." outputproperty="svn.version"/>
+		<condition property="svn.uncommitted">
+			<or>
+				<contains string="${svn.version}" substring="M"/>
+				<contains string="${svn.version}" substring="S"/>
+			</or>
+		</condition>
+		<propertyregex property="svn.revision" input="${svn.version}" regexp="([0-9]+:)?([0-9]+)" select="\2"/>
+		<property name="version.file" value="${version}.r${svn.revision}"/>
+		<property name="version.full" value="${version}.r${svn.revision}${suffix}"/>
+		<echo file="src/openstim/Version.java">
+			package openstim;
+			public interface Version {
+				public static final int revision = ${svn.revision};
+				public static final String version = "${version.full}";
+			}
+		</echo>
+	</target>
+
+	<target name="svncheck" if="svn.uncommitted">
+		<fail message="Your repository contains uncommitted changes.&#10;&#13;Please commit them before building a release.&#10;&#13;Otherwise the revision number embedded in the release would be wrong."/>
+	</target>
+
+	<target name="compile" depends="clean">
+		<mkdir dir="_build/classes"/>
+		<path id="classpath">
+			<!--<fileset dir="_build/graniteds/lib" includes="**/*.jar"/>-->
+			<!--<fileset dir="_build/rmi/bin" includes="**/*.jar"/>-->
+			<!--<pathelement location="_build/rmi/bin"/>-->
+		</path>
+		<copy todir="_build/classes">
+			<fileset dir=".">
+				<include name="**/*.gif"/>
+				<include name="**/*.png"/>
+				<include name="**/*.jpg"/>
+			</fileset>
+		</copy>
+		<javac srcdir="src" destdir="_build/classes" classpathref="classpath" includeantruntime="true" source="1.5" target="1.5" debug="${debug}">
+			<compilerarg value="-Xlint:unchecked"/>
+			<compilerarg value="-Xlint:deprecation"/>
+		</javac>
+		<manifestclasspath property="jar.classpath" jarfile="${destination}">
+			<classpath refid="classpath"/>
+		</manifestclasspath>
+		<jar destfile="${destination}" compress="true">
+			<fileset dir="_build/classes" includes="**/*.*"/>
+			<manifest>
+				<attribute name="Sealed" value="true"/>
+				<attribute name="Main-Class" value="openstim.GUI"/>
+				<attribute name="SplashScreen-Image" value="openstim/images/splash.png"/>
+				<attribute name="Class-Path" value="${jar.classpath}"/>
+			</manifest>
+		</jar>
+	</target>
+</project>
+
+
+
