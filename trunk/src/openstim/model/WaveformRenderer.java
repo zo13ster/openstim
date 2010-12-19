@@ -79,6 +79,11 @@ public class WaveformRenderer extends Component implements TableCellRenderer {
 		this.hasFocus = hasFocus;
 		return this;
 	}
+
+	@Override
+	public Dimension getPreferredSize() {
+		return new Dimension(400, 100);
+	}
 }
 
 
