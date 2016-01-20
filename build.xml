@@ -26,14 +26,8 @@
 	</target>
 
 	<target name="svnrev">
-		<exec executable="svnversion" spawn="false" dir="." outputproperty="svn.version"/>
-		<condition property="svn.uncommitted">
-			<or>
-				<contains string="${svn.version}" substring="M"/>
-				<contains string="${svn.version}" substring="S"/>
-			</or>
-		</condition>
-		<propertyregex property="svn.revision" input="${svn.version}" regexp="([0-9]+:)?([0-9]+)" select="\2"/>
+		<property name="version" value="0.0" />
+		<property name="svn.revision" value="0" />
 		<property name="version.file" value="${version}.r${svn.revision}"/>
 		<property name="version.full" value="${version}.r${svn.revision}${suffix}"/>
 		<echo file="src/openstim/Version.java">
